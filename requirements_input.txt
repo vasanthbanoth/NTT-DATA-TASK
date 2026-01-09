@@ -1,0 +1,3 @@
+I want to test the login page of https://ntt-data-vasanth.vercel.app/.
+Positive flow: User enters valid email and password and clicks submit.
+Negative flow: User enters invalid email and sees an error.

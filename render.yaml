@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ntt-data-automation
+    env: python
+    buildCommand: pip install -r requirements.txt && playwright install
+    startCommand: streamlit run dashboard.py --server.port=$PORT --server.address=0.0.0.0
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
