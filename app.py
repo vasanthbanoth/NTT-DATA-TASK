@@ -9,7 +9,7 @@ app.secret_key = os.urandom(24)
 
 # --- REAL LOGIC ---
 def real_llm_generate(url, reqs):
-    time.sleep(1.0)
+    time.sleep(0.1)
     return f"""Feature: Functional Testing of {url}
 
   @happy_path

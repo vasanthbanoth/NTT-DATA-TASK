@@ -150,8 +150,10 @@
 
         .sidebar {
             width: 300px;
-            background: rgba(38, 39, 48, 0.9); /* More transparent */
-            backdrop-filter: blur(10px); /* Glassmorphism */
+            background: rgba(38, 39, 48, 0.9);
+            /* More transparent */
+            backdrop-filter: blur(10px);
+            /* Glassmorphism */
             padding: 20px;
             border-radius: 10px;
             height: fit-content;
@@ -381,17 +383,27 @@ Negative: Invalid user sees error.</textarea>
             document.getElementById('status-text').innerText = 'Consulting AI Agent...';
             document.getElementById('spinner').style.display = 'inline-block';
 
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, reqs })
-            });
-            const data = await response.json();
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, reqs })
+                });
 
-            document.getElementById('status-box').style.display = 'none';
-            document.getElementById('step2').style.display = 'block';
-            document.getElementById('gherkin-output').value = data.scenario;
-            document.getElementById('target-display').innerText = url;
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const data = await response.json();
+
+                document.getElementById('status-box').style.display = 'none';
+                document.getElementById('step2').style.display = 'block';
+                document.getElementById('gherkin-output').value = data.scenario;
+                document.getElementById('target-display').innerText = url;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status-text').innerText = 'Error generating scenarios. Please try again.';
+                document.getElementById('spinner').style.display = 'none';
+                alert('Failed to generate scenarios. Check console for details.');
+            }
         }
 
         async function runTests() {
@@ -400,13 +412,22 @@ Negative: Invalid user sees error.</textarea>
             document.getElementById('spinner').style.display = 'inline-block';
             document.getElementById('execution-logs').style.display = 'none';
 
-            const response = await fetch('/api/run', { method: 'POST' });
-            const data = await response.json();
+            try {
+                const response = await fetch('/api/run', { method: 'POST' });
+                if (!response.ok) throw new Error('Execution failed');
 
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('status-text').innerText = 'Execution Complete!';
-            document.getElementById('execution-logs').style.display = 'block';
-            document.getElementById('execution-logs').innerText = data.logs;
+                const data = await response.json();
+
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('status-text').innerText = 'Execution Complete!';
+                document.getElementById('execution-logs').style.display = 'block';
+                document.getElementById('execution-logs').innerText = data.logs;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status-text').innerText = 'Test Execution Failed.';
+                document.getElementById('spinner').style.display = 'none';
+                alert('Test execution failed. See console.');
+            }
         }
     </script>
 </body>
