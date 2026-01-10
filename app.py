@@ -4,7 +4,10 @@ import time
 import subprocess
 import sys
 
-app = Flask(__name__)
+app_dir = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, 
+            template_folder=os.path.join(app_dir, 'templates'),
+            static_folder=os.path.join(app_dir, 'static'))
 app.secret_key = 'ntt_demo_super_secret_key_static_for_vercel' # Static key for serverless persistence
 
 # --- REAL LOGIC ---
