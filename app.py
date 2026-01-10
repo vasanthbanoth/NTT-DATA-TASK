@@ -49,7 +49,6 @@ def run_real_test():
 # --- ROUTES ---
 
 @app.route('/')
-@app.route('/')
 def index():
     # Always show login page for demo purposes, even if logged in
     return render_template('login.html')
@@ -117,7 +116,7 @@ def run_test():
             
         # Copy steps.py
         if os.path.exists("features/steps/steps.py"):
-             shutil.copy("features/steps/steps.py", f"{tmp_steps_dir}/steps.py")
+            shutil.copy("features/steps/steps.py", f"{tmp_steps_dir}/steps.py")
              
         # Move generated feature to /tmp/features/generated.feature if it was in /tmp root
         # Or just write it there in generate(). For now, let's just ensure it's there.
@@ -127,9 +126,9 @@ def run_test():
         
         # If generate() wrote to /tmp/generated.feature
         if os.path.exists("/tmp/generated.feature"):
-             shutil.move("/tmp/generated.feature", target_feature_file)
+            shutil.move("/tmp/generated.feature", target_feature_file)
         elif os.path.exists("features/generated.feature"):
-             shutil.copy("features/generated.feature", target_feature_file)
+            shutil.copy("features/generated.feature", target_feature_file)
              
         feature_file = target_feature_file
         
@@ -153,22 +152,22 @@ def run_test():
         # Robustness: If it failed (exit code != 0), we might want to simulate success for the DEMO on Vercel
         # solely because installing browsers on Vercel Free Tier is notoriously hard.
         if process.returncode != 0 and os.environ.get('VERCEL'):
-             # Check if it was a browser error
-             if "playwright" in output.lower() or "browser" in output.lower() or "steps directory" in output.lower():
-                 # GENERATE REALISTIC LOGS
-                 # Extract URL from feature file if possible, or just use a generic one if we can't parse it easily
-                 # But we can read /tmp/generated.feature
-                 target_url_log = "https://www.example.com"
-                 try:
-                     with open(feature_file, 'r') as f:
+            # Check if it was a browser error
+            if "playwright" in output.lower() or "browser" in output.lower() or "steps directory" in output.lower():
+                # GENERATE REALISTIC LOGS
+                # Extract URL from feature file if possible, or just use a generic one if we can't parse it easily
+                # But we can read /tmp/generated.feature
+                target_url_log = "https://www.example.com"
+                try:
+                    with open(feature_file, 'r') as f:
                         for line in f:
                             if "Functional Testing of" in line:
                                 target_url_log = line.split("Testing of")[-1].strip()
                                 break
-                 except: 
-                     pass
+                except: 
+                    pass
                      
-                 fallback_log = f"""Feature: Functional Testing of {target_url_log}
+                fallback_log = f"""Feature: Functional Testing of {target_url_log}
 
   @happy_path
   Scenario: Successful Login Flow
@@ -183,7 +182,7 @@ def run_test():
 5 steps passed, 0 failed, 0 skipped
 Took 0m3.4s
 """
-                 return jsonify({'logs': fallback_log, 'status': 'success'})
+                return jsonify({'logs': fallback_log, 'status': 'success'})
         
         return jsonify({'logs': output, 'status': 'success'})
     except Exception as e:
