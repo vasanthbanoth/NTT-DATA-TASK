@@ -49,9 +49,9 @@ def run_real_test():
 # --- ROUTES ---
 
 @app.route('/')
+@app.route('/')
 def index():
-    if session.get('logged_in'):
-        return redirect(url_for('dashboard'))
+    # Always show login page for demo purposes, even if logged in
     return render_template('login.html')
 
 @app.route('/login', methods=['POST'])

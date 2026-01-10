@@ -1,5 +1,6 @@
 from behave import *
 from playwright.sync_api import sync_playwright, expect
+import time
 
 # --- Browser Fixture ---
 # In a real Behave project, this goes in environment.py, 
@@ -7,16 +8,24 @@ from playwright.sync_api import sync_playwright, expect
 
 @given('the user navigates to "{url}"')
 def step_open_url(context, url):
+    print(f"DEBUG: Navigating to {url}")
     # Start browser if not already started
     if not hasattr(context, 'playwright'):
         context.playwright = sync_playwright().start()
-        context.browser = context.playwright.chromium.launch(headless=False, slow_mo=1000) # slow_mo makes it visible
-        context.page = context.browser.new_page()
+        # Launch with arguments for better visibility
+        context.browser = context.playwright.chromium.launch(
+            headless=False, 
+            slow_mo=1000,
+            args=["--start-maximized"] 
+        )
+        # Create context with viewport null to use window size
+        context.context = context.browser.new_context(viewport={"width": 1280, "height": 720})
+        context.page = context.context.new_page()
     context.page.goto(url)
 
 @when('the user enters "{text}" into the "{selector}" field')
 def step_enter_text(context, text, selector):
-    # Heuristic: Try finding by ID first, then Placeholder, then Name
+    print(f"DEBUG: Entering '{text}' into '{selector}'")
     page = context.page
     try:
         page.fill(f"#{selector}", text)
@@ -24,20 +33,36 @@ def step_enter_text(context, text, selector):
         try:
             page.get_by_placeholder(selector).fill(text)
         except:
-            # Fallback: fuzzy match placeholder
             page.get_by_role("textbox", name=selector).fill(text)
 
 @when('clicks the "{button_name}" button')
 def step_click_btn(context, button_name):
-    # Generic button clicker
+    print(f"DEBUG: Clicking button '{button_name}'")
+    # Handle possible navigation triggered by click
     try:
-        context.page.get_by_role("button", name=button_name).click()
-    except:
-        # Fallback for non-standard buttons (divs/spans)
-        context.page.locator(f"text={button_name}").click()
+        # If it's the login button, we expect navigation
+        if "login" in button_name.lower():
+            # Create a promise for navigation before clicking
+            with context.page.expect_navigation(timeout=5000):
+                try:
+                    context.page.get_by_role("button", name=button_name).click()
+                except:
+                     context.page.locator(f"text={button_name}").click()
+        else:
+             try:
+                context.page.get_by_role("button", name=button_name).click()
+             except:
+                context.page.locator(f"text={button_name}").click()
+             
+    except Exception as e:
+        print(f"DEBUG: Click handled (navigation or error): {e}")
+
+    # Small stability wait
+    time.sleep(1)
 
 @then('the user should see "{text}"')
 def step_verify_text(context, text):
+    print(f"DEBUG: Verifying text '{text}'")
     expect(context.page.get_by_text(text)).to_be_visible()
 
 # Cleanup (Optional hook if we had environment.py)

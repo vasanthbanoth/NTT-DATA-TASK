@@ -385,7 +385,7 @@ def set_page_styling(bg_file=None, logo_file=None):
     st.markdown(custom_css, unsafe_allow_html=True)
 
 # Apply Styling
-set_page_styling(bg_file="background.png", logo_file="ntt_logo.png")
+set_page_styling(bg_file="static/background.png", logo_file="static/ntt_logo.png")
 
 # --- SESSION STATE ---
 if 'logged_in' not in st.session_state:
@@ -461,7 +461,7 @@ def generate_gherkin(url, reqs):
     Mock LLM Generation logic. 
     In a real app, this would call OpenAI/Gemini API.
     """
-    time.sleep(1.5) # Simulate API latency
+    time.sleep(0.5) # Reduced from 1.5s - Simulate API latency
     
     # Dynamic Template based on user input slightly, but mostly mocked for stability
     feature_text = f"""Feature: Functional Testing of {url}
