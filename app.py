@@ -81,20 +81,73 @@ def generate():
     
     scenario = real_llm_generate(url, reqs)
     
-    # Save to file so 'behave' can find it
-    if not os.path.exists("features"): os.makedirs("features")
-    with open("features/generated.feature", "w") as f:
-        f.write(scenario)
+    # Save to /tmp for Vercel support (read-only FS elsewhere)
+    feature_path = "/tmp/generated.feature"
+    try:
+        with open(feature_path, "w") as f:
+            f.write(scenario)
+    except Exception as e:
+        # Fallback for local testing if /tmp issue (e.g. windows) - though mac has /tmp
+        if not os.path.exists("features"): os.makedirs("features")
+        with open("features/generated.feature", "w") as f:
+            f.write(scenario)
+        feature_path = "features/generated.feature"
         
-    return jsonify({'scenario': scenario})
+    return jsonify({'scenario': scenario, 'path': feature_path})
 
 @app.route('/api/run', methods=['POST'])
 def run_test():
     if not session.get('logged_in'): return jsonify({'error': 'Unauthorized'}), 401
     
-    # Run the actual test
-    logs = run_real_test()
-    return jsonify({'logs': logs, 'status': 'success'})
+    # Determine path (check /tmp first)
+    feature_file = "/tmp/generated.feature" # Old path
+    
+    # NEW Vercel Friendly Logic:
+    # 1. Ensure /tmp/features/steps exists
+    # 2. Copy steps.py there
+    # 3. Create generated.feature in /tmp/features/
+    
+    tmp_features_dir = "/tmp/features"
+    tmp_steps_dir = "/tmp/features/steps"
+    
+    import shutil
+    try:
+        if not os.path.exists(tmp_steps_dir):
+            os.makedirs(tmp_steps_dir)
+            
+        # Copy steps.py
+        if os.path.exists("features/steps/steps.py"):
+             shutil.copy("features/steps/steps.py", f"{tmp_steps_dir}/steps.py")
+             
+        # Move generated feature to /tmp/features/generated.feature if it was in /tmp root
+        # Or just write it there in generate(). For now, let's just ensure it's there.
+        # If generate() wrote to /tmp/generated.feature, let's move it or read it.
+        
+        target_feature_file = f"{tmp_features_dir}/generated.feature"
+        
+        # If generate() wrote to /tmp/generated.feature
+        if os.path.exists("/tmp/generated.feature"):
+             shutil.move("/tmp/generated.feature", target_feature_file)
+        elif os.path.exists("features/generated.feature"):
+             shutil.copy("features/generated.feature", target_feature_file)
+             
+        feature_file = target_feature_file
+        
+    except Exception as e:
+        return jsonify({'logs': f"Setup Error: {str(e)}", 'status': 'error'})
+
+    cmd = [sys.executable, "-m", "behave", feature_file, "--tags=@happy_path", "--no-capture", "--no-color"]
+    
+    try:
+        import subprocess
+        # Pass explicit environment if needed
+        # We need to make sure playwright is in path or installed. 
+        # On Vercel, this might still fail if playwright browsers aren't there.
+        process = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        output = process.stdout + "\n" + process.stderr
+        return jsonify({'logs': output, 'status': 'success'})
+    except Exception as e:
+         return jsonify({'logs': f"Execution Error: {str(e)}", 'status': 'error'})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
