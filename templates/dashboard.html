@@ -412,6 +412,13 @@ Negative: Invalid user sees error.</textarea>
             document.getElementById('spinner').style.display = 'inline-block';
             document.getElementById('execution-logs').style.display = 'none';
 
+            // VISUAL FEEDBACK: Open the target URL in a new tab so the user sees "Chrome opening"
+            // This is crucial for Vercel where the server is headless.
+            const targetUrl = document.getElementById('target-display').innerText || document.getElementById('url').value;
+            if (targetUrl) {
+                window.open(targetUrl, '_blank');
+            }
+
             try {
                 const response = await fetch('/api/run', { method: 'POST' });
                 if (!response.ok) throw new Error('Execution failed');
