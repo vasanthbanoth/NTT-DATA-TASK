@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = 'ntt_demo_super_secret_key_static_for_vercel' # Static key for serverless persistence
 
 # --- REAL LOGIC ---
 def real_llm_generate(url, reqs):
@@ -80,19 +80,22 @@ def generate():
     
     scenario = real_llm_generate(url, reqs)
     
-    # Save to /tmp for Vercel support (read-only FS elsewhere)
-    feature_path = "/tmp/generated.feature"
     try:
-        with open(feature_path, "w") as f:
-            f.write(scenario)
+        # Save to /tmp for Vercel support (read-only FS elsewhere)
+        feature_path = "/tmp/generated.feature"
+        try:
+            with open(feature_path, "w") as f:
+                f.write(scenario)
+        except Exception as e:
+            # Fallback for local testing if /tmp issue (e.g. windows) - though mac has /tmp
+            if not os.path.exists("features"): os.makedirs("features")
+            with open("features/generated.feature", "w") as f:
+                f.write(scenario)
+            feature_path = "features/generated.feature"
+            
+        return jsonify({'scenario': scenario, 'path': feature_path})
     except Exception as e:
-        # Fallback for local testing if /tmp issue (e.g. windows) - though mac has /tmp
-        if not os.path.exists("features"): os.makedirs("features")
-        with open("features/generated.feature", "w") as f:
-            f.write(scenario)
-        feature_path = "features/generated.feature"
-        
-    return jsonify({'scenario': scenario, 'path': feature_path})
+        return jsonify({'error': f"Failed to save scenario: {str(e)}"}), 500
 
 @app.route('/api/run', methods=['POST'])
 def run_test():
