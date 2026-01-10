@@ -9,17 +9,25 @@ import time
 @given('the user navigates to "{url}"')
 def step_open_url(context, url):
     print(f"DEBUG: Navigating to {url}")
+    # Determine if running on Vercel/CI or Local
+    import os
+    is_headless = os.environ.get('VERCEL') == '1' or os.environ.get('CI') == 'true'
+    
     # Start browser if not already started
     if not hasattr(context, 'playwright'):
         context.playwright = sync_playwright().start()
         # Launch with arguments for better visibility
         context.browser = context.playwright.chromium.launch(
-            headless=False, 
-            slow_mo=1000,
-            args=["--start-maximized"] 
+            headless=is_headless, 
+            slow_mo=1000 if not is_headless else 0, # Faster on CI
+            args=["--start-maximized"] if not is_headless else ["--no-sandbox", "--disable-dev-shm-usage"]
         )
-        # Create context with viewport null to use window size
-        context.context = context.browser.new_context(viewport={"width": 1280, "height": 720})
+        # Create context
+        if not is_headless:
+             context.context = context.browser.new_context(viewport={"width": 1280, "height": 720})
+        else:
+             context.context = context.browser.new_context()
+             
         context.page = context.context.new_page()
     context.page.goto(url)
 
